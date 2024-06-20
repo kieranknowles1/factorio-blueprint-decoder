@@ -189,6 +189,7 @@ class Index:
         "reactor": ENTITY,
         "roboport": ENTITY,
         "rocket-silo": ENTITY,
+        "simple-entity-with-force": ENTITY,
         "simple-entity": ENTITY,
         "solar-panel": ENTITY,
         "splitter": ENTITY,
@@ -2015,6 +2016,15 @@ def eh_burner_generator(stream, index, entity):
     stream.expect(*[0x00]*12)
     ep_direction(stream, index, entity)
 
+def eh_simple_entity_with_force(stream, index, entity):
+    ep_v1_1_51_4_flag(stream, index, entity, 0x01)
+    stream.expect(0x4D, 0x00, 0x00, 0x00) # Force ID?
+    stream.expect(0x00, 0xff, 0xff) # No idea
+    entity["variation"] = stream.s8() + 1 # Binary is 0-indexed, export is 1-indexed
+    stream.expect(*[0x00]*8) # Padding?
+    ep_direction(stream, index, entity)
+    pass
+
 
 entity_handlers = {
     # Logistics
@@ -2046,6 +2056,7 @@ entity_handlers = {
     "constant-combinator": eh_constant_combinator,
     "power-switch": eh_power_switch,
     "programmable-speaker": eh_programmable_speaker,
+    "simple-entity-with-force": eh_simple_entity_with_force,
     # Production
     "boiler": eh_boiler,
     "generator": eh_generator,
@@ -2314,7 +2325,7 @@ def parse_entities(stream, index, result):
         # parse entity details
         handler = entity_handlers.get(entry.prototype)
         if not handler:
-            raise ParseError(f"no entity handler for {entry.prototype}/{entry.name} ({entry.id:#x})")
+            raise ParseError(f"no entity handler for {entry.prototype}/{entry.name} ({entry.id:#x}) at {file_position:#x}")
         handler(stream, index, entity)
 
         # vanilla: modules, fuel; mods&co: ammo, ...
