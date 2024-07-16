@@ -746,6 +746,16 @@ def ep_railway_vehicle_common(stream, index, entity):
 
     stream.expect(0x00)
 
+# Name is speculative, but I don't see anything else this could be.
+def ep_maybe_equipment_grid(stream: PrimitiveStream, index, entity):
+    byte = stream.u8()
+    if byte == 0x00:
+        pass # Vanilla
+    elif byte == 0x4d:
+        stream.expect(0x00) # K2SE. Equipment grid? This isn't exported.
+    else:
+        raise ParseError(f"unexpected byte {byte:#04x}")
+
 
 def ep_filters(stream, index, entity):
     # Even without filters the count is > 0 for filter-inserters.
@@ -1316,9 +1326,10 @@ def eh_rail_chain_signal(stream, index, entity):
             del entity["control_behavior"]
 
 
-def eh_locomotive(stream, index, entity):
+def eh_locomotive(stream: PrimitiveStream, index, entity):
     ep_v1_1_51_4_flag(stream, index, entity, 0x00, 0x01)
-    stream.expect(0x00)
+
+    ep_maybe_equipment_grid(stream, index, entity)
 
     ep_orientation(stream, index, entity)
 
@@ -1331,7 +1342,7 @@ def eh_locomotive(stream, index, entity):
 
 def eh_cargo_wagon(stream, index, entity):
     ep_v1_1_51_4_flag(stream, index, entity, 0x00, 0x01)
-    stream.expect(0x00)
+    ep_maybe_equipment_grid(stream, index, entity)
     ep_orientation(stream, index, entity)
 
     ep_railway_vehicle_common(stream, index, entity)
@@ -1360,7 +1371,7 @@ def eh_cargo_wagon(stream, index, entity):
 
 def eh_fluid_wagon(stream, index, entity):
     ep_v1_1_51_4_flag(stream, index, entity, 0x00, 0x01)
-    stream.expect(0x00)
+    ep_maybe_equipment_grid(stream, index, entity)
     ep_orientation(stream, index, entity)
 
     ep_railway_vehicle_common(stream, index, entity)
@@ -1370,7 +1381,7 @@ def eh_fluid_wagon(stream, index, entity):
 
 def eh_artillery_wagon(stream, index, entity):
     ep_v1_1_51_4_flag(stream, index, entity, 0x00, 0x01)
-    stream.expect(0x00)
+    ep_maybe_equipment_grid(stream, index, entity)
     ep_orientation(stream, index, entity)
 
     ep_railway_vehicle_common(stream, index, entity)
