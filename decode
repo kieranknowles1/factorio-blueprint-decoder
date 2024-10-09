@@ -569,13 +569,16 @@ def ep_v1_1_51_4_flag(stream, index, entity, *expected_values):
             stream.expect_oneof(*expected_values)
 
 
-def ep_v1_1_62_5_flag(stream, index, entity):
+def ep_optional_filters(stream: PrimitiveStream, index, entity):
     # Release-Notes 1.1.62:
     #   > Added support for container entities with filters
     #   > by using inventory_type = "with_bar" or "with_filters_and_bar".
     # So this could be a flag opening a "filters" section.
-    if version >= V_1_1_62_5:
-        stream.expect(0x00)
+    # if version >= V_1_1_62_5:
+    #     stream.expect(0x00)
+
+    if stream.bool(): # If true, the entity has filters.
+        ep_filters(stream, index, entity)
 
 
 def ep_bar(stream, index, entity):
@@ -760,6 +763,8 @@ def ep_maybe_equipment_grid(stream: PrimitiveStream, index, entity):
 def ep_filters(stream, index, entity):
     # Even without filters the count is > 0 for filter-inserters.
     filter_count = stream.u8()
+    if filter_count == 255: # 0xff is used as an overflow marker, real count follows as a u32
+        filter_count = stream.u32()
 
     filters = []
     for f in range(filter_count):
@@ -860,7 +865,7 @@ def ep_tags(stream, index, entity):
 
 def eh_container(stream, index, entity):
     ep_v1_1_51_4_flag(stream, index, entity, 0x00)
-    ep_v1_1_62_5_flag(stream, index, entity)
+    ep_optional_filters(stream, index, entity)
 
     # restriction aka. "bar"
     ep_bar(stream, index, entity)
@@ -873,7 +878,7 @@ def eh_container(stream, index, entity):
 
 def eh_logistic_container(stream, index, entity):
     ep_v1_1_51_4_flag(stream, index, entity, 0x00)
-    ep_v1_1_62_5_flag(stream, index, entity)
+    ep_optional_filters(stream, index, entity)
 
     # restriction aka. "bar"
     ep_bar(stream, index, entity)
@@ -898,7 +903,7 @@ def eh_logistic_container(stream, index, entity):
 
 def eh_infinity_container(stream, index, entity):
     ep_v1_1_51_4_flag(stream, index, entity, 0x00)
-    ep_v1_1_62_5_flag(stream, index, entity)
+    ep_optional_filters(stream, index, entity)
 
     # restriction aka. "bar"
     ep_bar(stream, index, entity)
@@ -2037,7 +2042,7 @@ def eh_linked_container(stream, index, entity):
     link_id = stream.u32()
     entity["link_id"] = link_id
 
-    ep_v1_1_62_5_flag(stream, index, entity)
+    ep_optional_filters(stream, index, entity)
 
 
 # reachable via map editor or infinity-chest
